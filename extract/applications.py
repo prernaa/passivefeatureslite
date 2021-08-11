@@ -3,6 +3,18 @@ import pandas as pd
 
 
 
+
+def number_of_total_launches_apps(g, pkg_col):
+    return g[pkg_col].count()
+
+def number_of_unique_apps(g, pkg_col):
+    return g[pkg_col].nunique()
+
+
+
+
+
+
 def number_of_launches_category(g, cat_col, sel_cat_name):
     sel_g = g[(g[cat_col]==sel_cat_name.upper())]
     return len(sel_g)
@@ -16,11 +28,8 @@ def mean_time_spent_category(g, cat_col, sel_cat_name, time_spent_col):
     return (sel_g[time_spent_col].mean())
 
 
-def number_of_unique_apps(g, pkg_col):
-    return g[pkg_col].nunique()
 
-def number_of_samples_apps(g, pkg_col):
-    return g[pkg_col].count()
+
 
 
 def apps_per_minute(g, pkg_col, timestamp_ms_col): 

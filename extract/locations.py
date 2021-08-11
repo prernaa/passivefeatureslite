@@ -7,6 +7,18 @@ from sklearn.cluster import DBSCAN
 import datetime
 from astropy.timeseries import LombScargle
 
+def home_stay_time_percent(g, semantic_loc_col="semantic_loc"):
+    if g is None or len(g) == 0:
+        return None
+    home_val = g[(g[semantic_loc_col]=="home")]
+    home_stay_time_percent = (float(len(home_val))/len(g))
+    return home_stay_time_percent
+
+
+
+
+    
+
 def number_location_transitions(g, loc_label_col="location_label"):
     if g is None or len(g) == 0:
         return None
@@ -59,7 +71,9 @@ def len_stay_at_clusters_in_minutes(g, SAMPLE_RATE, loc_label_col="location_labe
         smin = None
         sstd = None
         smean = None
-    return pd.Series({"max_len_stay_at_clusters_in_minutes": smax, "min_len_stay_at_clusters_in_minutes": smin, "std_len_stay_at_clusters_in_minutes": sstd, "mean_len_stay_at_clusters_in_minutes": smean})
+#     return pd.Series({"max_len_stay_at_clusters_in_minutes": smax, "min_len_stay_at_clusters_in_minutes": smin, "std_len_stay_at_clusters_in_minutes": sstd, "mean_len_stay_at_clusters_in_minutes": smean})
+    return pd.Series({"std_len_stay_at_clusters_in_minutes": sstd, "mean_len_stay_at_clusters_in_minutes": smean})
+
 
 def distance_row(x):
     """
@@ -74,7 +88,26 @@ def distance_row(x):
     except UnboundLocalError:
         return 0
 
-def get_all_travel_distances_meters(g, SAMPLE_RATE, lat_col="latitude", lng_col="longitude", loc_label_col="location_label"):
+# def get_all_travel_distances_meters(g, SAMPLE_RATE, lat_col="latitude", lng_col="longitude", loc_label_col="location_label"):
+#     if g is None or len(g) == 0:
+#         return None
+#     lat_lon_temp = pd.DataFrame()
+
+#     lat_lon_temp['_lat_before'] = g[lat_col]
+#     lat_lon_temp['_lat_after'] =  g[lat_col].shift(-1)
+#     lat_lon_temp['_lon_before'] = g[lng_col]
+#     lat_lon_temp['_lon_after'] =  g[lng_col].shift(-1)
+#     lat_lon_temp["location_label"] = g[loc_label_col]
+#     lat_lon_temp['time_before'] = g.index
+#     lat_lon_temp['time_after'] = lat_lon_temp['time_before'].shift(-1)
+#     lat_lon_temp['time_diff'] = lat_lon_temp['time_after'] - lat_lon_temp['time_before']
+
+#     time_okay = (lat_lon_temp['time_diff']==pd.Timedelta(str(SAMPLE_RATE)+"min"))
+#     changes_selector = (time_okay)
+#     distances = lat_lon_temp.apply(distance_row, axis = 1)[changes_selector]
+#     return distances
+
+def get_all_travel_distances_meters(g, SAMPLE_RATE, lat_col="latitude", lng_col="longitude", loc_label_col="location_label", time_col="timestamp_dt"):
     if g is None or len(g) == 0:
         return None
     lat_lon_temp = pd.DataFrame()
@@ -84,13 +117,15 @@ def get_all_travel_distances_meters(g, SAMPLE_RATE, lat_col="latitude", lng_col=
     lat_lon_temp['_lon_before'] = g[lng_col]
     lat_lon_temp['_lon_after'] =  g[lng_col].shift(-1)
     lat_lon_temp["location_label"] = g[loc_label_col]
-    lat_lon_temp['time_before'] = g.index
+    lat_lon_temp['time_before'] = g[time_col]
     lat_lon_temp['time_after'] = lat_lon_temp['time_before'].shift(-1)
     lat_lon_temp['time_diff'] = lat_lon_temp['time_after'] - lat_lon_temp['time_before']
+#     display (lat_lon_temp)
 
     time_okay = (lat_lon_temp['time_diff']==pd.Timedelta(str(SAMPLE_RATE)+"min"))
     changes_selector = (time_okay)
     distances = lat_lon_temp.apply(distance_row, axis = 1)[changes_selector]
+#     distances = lat_lon_temp.apply(distance_row, axis = 1)
     return distances
 
 def travel_distance_meters(g, SAMPLE_RATE): # to be computed on static and moving both
@@ -209,14 +244,12 @@ def number_of_clusters(g, loc_label_col="location_label"):
     uniquelst = g[loc_label_col].unique()
     return len(uniquelst)
 
-def moving_time_percent(g, loc_label_col="location_label"):
+def moving_time_percent(g, stationary_col="stationary"):
     if g is None or len(g) == 0:
         return None
-    lbls = g[loc_label_col]
-    nummoving = lbls.isnull().sum()
-    numtotal = len(lbls)
-    # print (nummoving)
-    # print(numtotal)
+    moving_g = g[(g[stationary_col]==0)]
+    nummoving = len(moving_g)
+    numtotal = len(g)
     return (float(nummoving)/numtotal)
 
 def outliers_time_percent(g, loc_label_col="location_label"):
@@ -228,4 +261,39 @@ def outliers_time_percent(g, loc_label_col="location_label"):
     numtotal = len(lbls)
     return (float(numoutliers) / numtotal)
 
+# def pct_time_at_top_3_clusters(g, loc_label_col="location_label"):
+#     if g is None or len(g) == 0:
+#     return pd.Series({"pct_time_at_cluster_1": None, "pct_time_at_cluster_2": None, "pct_time_at_cluster_3": None})
+#     g =  g.dropna(how='any') # should not be required if input is static
+#     g = g.drop(g[(g.location_label < 1)].index) # remove outliers/ cluster noise
+#     valcounts = g["location_label"].value_counts().to_dict()
+#     cluster_sorted = sorted(valcounts.keys())
+#     valcountsout = {}
+#     for k in cluster_sorted:
+#         valcountsout[int(k)] = valcounts[k]*SAMPLE_RATE
+#     if 1 in valcountsout.keys():
+#         clus1 = valcountsout[1]*SAMPLE_RATE
+#     else:
+#         clus1 = 0
+#     if 2 in valcountsout.keys():
+#         clus2 = valcountsout[2]*SAMPLE_RATE
+#     else:
+#         clus2 = 0
+#     if 3 in valcountsout.keys():
+#         clus3 = valcountsout[3]*SAMPLE_RATE
+#     else:
+#         clus3 = 0
+#     return pd.Series({"time_at_cluster_1": clus1, "time_at_cluster_2": clus2, "time_at_cluster_3": clus3})
+
+
+def pct_time_at_top_cluster_x(g, x, loc_label_col="location_label", stationary_col="stationary"):
+    if g is None or len(g) == 0:
+        return None
+    # keep only stationary
+    g_static = g[(g[stationary_col]==1)]
+    g_static_x = g_static[(g_static[loc_label_col]==x)]
+    if (len(g_static) == 0):
+        return 0
+    return (float(len(g_static_x))/len(g_static))
+    
 
