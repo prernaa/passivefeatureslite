@@ -26,7 +26,7 @@ def cluster_address_freq(df): # not for feature extraction directly
     # score = freq
     # USE BELOW TO USE EQUALLY WEIGHTED AVGFREQ (TOTAL FREQ/ NUMBER OF DAYS THE ADDRESS APPEARS AT LEAST ONCE) AND NUMDAYS (NUMBER OF DAYS THE ADDRESS APPEARS AT LEAST ONCE)
     df = df.dropna(how='any')
-    if len(df) == 0:
+    if len(df) < 3:
         return (df, None)
 
     avgfreq_z = df["avgfreq_z"]

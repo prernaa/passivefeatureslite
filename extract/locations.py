@@ -158,10 +158,18 @@ def radius_of_gyration(g):
     not_noise = g[g["location_label"] != -1]
     changes_selector = (not_noise["location_label"].shift() != not_noise["location_label"])
     mobility_trace = not_noise[changes_selector]
-
+    if len(mobility_trace)==0:
+        return 0
     #Average x,y
     lat_lon = mobility_trace[["latitude","longitude"]].values
+#     try:
     center = np.average(lat_lon, axis = 0)
+#     except:
+#         print (len(g))
+#         print (len(not_noise))
+#         print (changes_selector.sum())
+#         print (mobility_trace)
+#         print (lat_lon)
     norm = np.linalg.norm(lat_lon - center)
     return np.sqrt(norm) / len(lat_lon)
 
@@ -182,6 +190,7 @@ def circadian_movement_energies(g, timestamp_ms_col, lat_col, lng_col):
     return (E_lat, E_long)
 
 def circadian_movement(g, timestamp_ms_col="timestamp", lat_col="latitude", lng_col="longitude"):
+    ## @TODO - Sometimes gives inf, should change code to avoid that
     if g is None or len(g) == 0:
         return None
     E_lat, E_long = circadian_movement_energies(g, timestamp_ms_col, lat_col, lng_col)
